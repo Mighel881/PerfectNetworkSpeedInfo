@@ -1,6 +1,7 @@
 #import "NetworkSpeed13.h"
 
 #import "SparkColourPickerUtils.h"
+#import "SparkAppList.h"
 #import <Cephei/HBPreferences.h>
 #import <ifaddrs.h>
 #import <net/if.h>
@@ -55,6 +56,10 @@ static BOOL customTextColorEnabled;
 static UIColor *customTextColor;
 static long alignment;
 static double updateInterval;
+static BOOL enableDoubleTap;
+static NSString *doubleTapIdentifier;
+static BOOL enableHold;
+static NSString *holdIdentifier;
 
 // Got some help from similar network speed tweaks by julioverne & n3d1117
 
@@ -202,12 +207,19 @@ static void loadDeviceScreenDimensions()
 				[networkSpeedWindow setHidden: NO];
 				[networkSpeedWindow setAlpha: 1];
 				[networkSpeedWindow _setSecure: YES];
-				[networkSpeedWindow setUserInteractionEnabled: NO];
+				[networkSpeedWindow setUserInteractionEnabled: YES];
 				[[networkSpeedWindow layer] setAnchorPoint: CGPointZero];
 				
 				networkSpeedLabel = [[UILabelWithInsets alloc] initWithFrame: CGRectMake(0, 0, width, height)];
 				[[networkSpeedLabel layer] setMasksToBounds: YES];
-				[(UIView *)networkSpeedWindow addSubview: networkSpeedLabel];
+				[networkSpeedWindow addSubview: networkSpeedLabel];
+
+				UITapGestureRecognizer *tapGestureRecognizer = [[UITapGestureRecognizer alloc] initWithTarget: self action: @selector(openDoubleTapApp)];
+				[tapGestureRecognizer setNumberOfTapsRequired: 2];
+				[networkSpeedWindow addGestureRecognizer: tapGestureRecognizer];
+
+				UILongPressGestureRecognizer *holdGestureRecognizer = [[UILongPressGestureRecognizer alloc] initWithTarget: self action: @selector(openHoldApp)];
+				[networkSpeedWindow addGestureRecognizer: holdGestureRecognizer];
 
 				[self updateFrame];
 
@@ -229,7 +241,7 @@ static void loadDeviceScreenDimensions()
 
 	- (void)_updateFrame
 	{
-		if(showOnLockScreen) [networkSpeedWindow setWindowLevel: 1050];
+		if(showOnLockScreen) [networkSpeedWindow setWindowLevel: 1051];
 		else [networkSpeedWindow setWindowLevel: 1000];
 
 		[self updateNetworkSpeedLabelProperties];
@@ -370,6 +382,18 @@ static void loadDeviceScreenDimensions()
 		}
 	}
 
+	- (void)openDoubleTapApp
+	{
+		if(enableDoubleTap && doubleTapIdentifier)
+			[[UIApplication sharedApplication] launchApplicationWithIdentifier: doubleTapIdentifier suspended: NO];
+	}
+
+	- (void)openHoldApp
+	{
+		if(enableHold && holdIdentifier)
+			[[UIApplication sharedApplication] launchApplicationWithIdentifier: holdIdentifier suspended: NO];
+	}
+
 @end
 
 %hook SpringBoard
@@ -426,12 +450,28 @@ static void settingsChanged(CFNotificationCenterRef center, void *observer, CFSt
 	alignment = [pref integerForKey: @"alignment"];
 	showAlways = [pref boolForKey: @"showAlways"];
 	updateInterval = [pref doubleForKey: @"updateInterval"];
+	enableDoubleTap = [pref boolForKey: @"enableDoubleTap"];
+	enableHold = [pref boolForKey: @"enableHold"];
 
 	if(backgroundColorEnabled && customBackgroundColorEnabled || customTextColorEnabled)
 	{
 		NSDictionary *preferencesDictionary = [NSDictionary dictionaryWithContentsOfFile: @"/var/mobile/Library/Preferences/com.johnzaro.networkspeed13prefs.colors.plist"];
 		customBackgroundColor = [SparkColourPickerUtils colourWithString: [preferencesDictionary objectForKey: @"customBackgroundColor"] withFallback: @"#000000:0.50"];
 		customTextColor = [SparkColourPickerUtils colourWithString: [preferencesDictionary objectForKey: @"customTextColor"] withFallback: @"#FF9400"];
+	}
+
+	if(enableDoubleTap)
+	{
+		NSArray *doubleTapApp = [SparkAppList getAppListForIdentifier: @"com.johnzaro.networkspeed13prefs.gestureApps" andKey: @"doubleTapApp"];
+		if(doubleTapApp && [doubleTapApp count] == 1)
+			doubleTapIdentifier = doubleTapApp[0];
+	}
+
+	if(enableHold)
+	{
+		NSArray *holdApp = [SparkAppList getAppListForIdentifier: @"com.johnzaro.networkspeed13prefs.gestureApps" andKey: @"holdApp"];
+		if(holdApp && [holdApp count] == 1)
+			holdIdentifier = holdApp[0];
 	}
 
 	if(networkSpeedObject)
@@ -473,7 +513,9 @@ static void settingsChanged(CFNotificationCenterRef center, void *observer, CFSt
 			@"boldFont": @NO,
 			@"customTextColorEnabled": @NO,
 			@"alignment": @1,
-			@"updateInterval": @1.0
+			@"updateInterval": @1.0,
+			@"enableDoubleTap": @NO,
+			@"enableHold": @NO
     	}];
 
 		settingsChanged(NULL, NULL, NULL, NULL, NULL);

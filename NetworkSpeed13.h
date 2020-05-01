@@ -16,6 +16,8 @@
 - (void)updateFrame;
 - (void)updateNetworkSpeedSize;
 - (void)updateTextColor:(UIColor *)color;
+- (void)openDoubleTapApp;
+- (void)openHoldApp;
 @end
 
 @interface UIWindow ()
@@ -36,4 +38,8 @@
 
 @interface CALayer ()
 - (void)setContinuousCorners:(BOOL)arg1;
+@end
+
+@interface UIApplication ()
+- (BOOL)launchApplicationWithIdentifier:(id)arg1 suspended:(BOOL)arg2;
 @end
