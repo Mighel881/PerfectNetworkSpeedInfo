@@ -1,15 +1,17 @@
 @interface SBCoverSheetPresentationManager: NSObject
 + (id)sharedInstance;
 - (BOOL)_isEffectivelyLocked;
+- (BOOL)isPresented;
 @end
 
-@interface UILabelWithInsets : UILabel
+@interface UILabelWithInsets: UILabel
 @end
 
 @interface NetworkSpeed: NSObject
 {
     UIWindow *networkSpeedWindow;
     UILabelWithInsets *networkSpeedLabel;
+    SBCoverSheetPresentationManager *coverSheetPresentationManagerInstance;
 }
 - (id)init;
 - (void)updateOrientation;
@@ -18,14 +20,29 @@
 - (void)updateTextColor:(UIColor *)color;
 - (void)openDoubleTapApp;
 - (void)openHoldApp;
+- (void)setHidden:(BOOL)arg;
 @end
 
 @interface UIWindow ()
 - (void)_setSecure:(BOOL)arg1;
 @end
 
+@interface UIWindow ()
+- (void)_setSecure: (BOOL)arg1;
+@end
+
+@interface SBApplication: NSObject
+-(NSString*)bundleIdentifier;
+@end
+
+@interface SpringBoard: UIApplication
+- (id)_accessibilityFrontMostApplication;
+-(void)frontDisplayDidChange: (id)arg1;
+@end
+
 @interface UIApplication ()
 - (UIDeviceOrientation)_frontMostAppOrientation;
+- (BOOL)launchApplicationWithIdentifier:(id)arg1 suspended:(BOOL)arg2;
 @end
 
 @interface _UIStatusBarStyleAttributes : NSObject

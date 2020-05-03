@@ -60,6 +60,10 @@ static BOOL enableDoubleTap;
 static NSString *doubleTapIdentifier;
 static BOOL enableHold;
 static NSString *holdIdentifier;
+static BOOL enableBlackListedApps;
+static NSArray *blackListedApps;
+
+static BOOL isBlacklistedAppInFront = NO;
 
 // Got some help from similar network speed tweaks by julioverne & n3d1117
 
@@ -221,6 +225,8 @@ static void loadDeviceScreenDimensions()
 				UILongPressGestureRecognizer *holdGestureRecognizer = [[UILongPressGestureRecognizer alloc] initWithTarget: self action: @selector(openHoldApp)];
 				[networkSpeedWindow addGestureRecognizer: holdGestureRecognizer];
 
+				coverSheetPresentationManagerInstance = [%c(SBCoverSheetPresentationManager) sharedInstance];
+
 				[self updateFrame];
 
 				[NSTimer scheduledTimerWithTimeInterval: updateInterval target: self selector: @selector(updateText) userInfo: nil repeats: YES];
@@ -352,15 +358,19 @@ static void loadDeviceScreenDimensions()
 	{
 		if(networkSpeedWindow && networkSpeedLabel)
 		{
-			if(![[%c(SBCoverSheetPresentationManager) sharedInstance] _isEffectivelyLocked])
+			if(![coverSheetPresentationManagerInstance _isEffectivelyLocked])
 			{
 				NSString *speed = formattedString();
-				if(shouldUpdateSpeedLabel)
+				if(shouldUpdateSpeedLabel && ([coverSheetPresentationManagerInstance isPresented] || !isBlacklistedAppInFront))
 				{
 					[networkSpeedWindow setHidden: NO];
 					[networkSpeedLabel setText: speed];
 				}
-				else [networkSpeedWindow setHidden: YES];
+				else 
+				{
+					[networkSpeedWindow setHidden: YES];
+					[networkSpeedLabel setText: @""];
+				}
 			}
 			else [networkSpeedWindow setHidden: YES];
 		}
@@ -380,6 +390,11 @@ static void loadDeviceScreenDimensions()
 			}	
 
 		}
+	}
+
+	- (void)setHidden: (BOOL)arg
+	{
+		[networkSpeedWindow setHidden: arg];
 	}
 
 	- (void)openDoubleTapApp
@@ -405,6 +420,16 @@ static void loadDeviceScreenDimensions()
 	loadDeviceScreenDimensions();
 	if(!networkSpeedObject) 
 		networkSpeedObject = [[NetworkSpeed alloc] init];
+}
+
+-(void)frontDisplayDidChange: (id)arg1 
+{
+	%orig;
+
+	NSString *currentApp = [(SBApplication*)[self _accessibilityFrontMostApplication] bundleIdentifier];
+	isBlacklistedAppInFront = blackListedApps && currentApp && [blackListedApps containsObject: currentApp];
+
+	[networkSpeedObject setHidden: isBlacklistedAppInFront];
 }
 
 %end
@@ -452,6 +477,7 @@ static void settingsChanged(CFNotificationCenterRef center, void *observer, CFSt
 	updateInterval = [pref doubleForKey: @"updateInterval"];
 	enableDoubleTap = [pref boolForKey: @"enableDoubleTap"];
 	enableHold = [pref boolForKey: @"enableHold"];
+	enableBlackListedApps = [pref boolForKey: @"enableBlackListedApps"];
 
 	if(backgroundColorEnabled && customBackgroundColorEnabled || customTextColorEnabled)
 	{
@@ -473,6 +499,11 @@ static void settingsChanged(CFNotificationCenterRef center, void *observer, CFSt
 		if(holdApp && [holdApp count] == 1)
 			holdIdentifier = holdApp[0];
 	}
+
+	if(enableBlackListedApps)
+		blackListedApps = [SparkAppList getAppListForIdentifier: @"com.johnzaro.networkspeed13prefs.blackListedApps" andKey: @"blackListedApps"];
+	else
+		blackListedApps = nil;
 
 	if(networkSpeedObject)
 	{
@@ -515,7 +546,8 @@ static void settingsChanged(CFNotificationCenterRef center, void *observer, CFSt
 			@"alignment": @1,
 			@"updateInterval": @1.0,
 			@"enableDoubleTap": @NO,
-			@"enableHold": @NO
+			@"enableHold": @NO,
+			@"enableBlackListedApps": @NO
     	}];
 
 		settingsChanged(NULL, NULL, NULL, NULL, NULL);

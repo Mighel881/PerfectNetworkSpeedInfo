@@ -75,6 +75,14 @@
 	return _specifiers;
 }
 
+- (void)selectBlackListedApps
+{
+    SparkAppListTableViewController *s = [[SparkAppListTableViewController alloc] initWithIdentifier: @"com.johnzaro.networkspeed13prefs.blackListedApps" andKey: @"blackListedApps"];
+
+    [self.navigationController pushViewController: s animated: YES];
+    self.navigationItem.hidesBackButton = FALSE;
+}
+
 - (void)selectDoubleTapApp
 {
     SparkAppListTableViewController *s = [[SparkAppListTableViewController alloc] initWithIdentifier: @"com.johnzaro.networkspeed13prefs.gestureApps" andKey: @"doubleTapApp"];
@@ -105,9 +113,10 @@
             [[[HBPreferences alloc] initWithIdentifier: @"com.johnzaro.networkspeed13prefs"] removeAllObjects];
 
             NSFileManager *manager = [NSFileManager defaultManager];
-            [manager removeItemAtPath:@"/var/mobile/Library/Preferences/com.johnzaro.networkspeed13prefs.plist" error: nil];
-            [manager removeItemAtPath:@"/var/mobile/Library/Preferences/com.johnzaro.networkspeed13prefs.colors.plist" error: nil];
-            [manager removeItemAtPath:@"/var/mobile/Library/Preferences/com.johnzaro.networkspeed13prefs.gestureApps.plist" error: nil];
+            [manager removeItemAtPath: @"/var/mobile/Library/Preferences/com.johnzaro.networkspeed13prefs.plist" error: nil];
+            [manager removeItemAtPath: @"/var/mobile/Library/Preferences/com.johnzaro.networkspeed13prefs.colors.plist" error: nil];
+            [manager removeItemAtPath: @"/var/mobile/Library/Preferences/com.johnzaro.networkspeed13prefs.gestureApps.plist" error: nil];
+            [manager removeItemAtPath: @"/var/mobile/Library/Preferences/com.johnzaro.networkspeed13prefs.blackListedApps.plist" error: nil];
 
             [self respring];
         }];
