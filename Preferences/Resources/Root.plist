@@ -36,93 +36,9 @@
 			<key>cell</key>
 			<string>PSGroupCell</string>
 			<key>label</key>
-			<string>DISPLAY OPTIONS</string>
+			<string>WHEN TO SHOW</string>
 			<key>footerText</key>
-			<string>'Show On Lock Screen' Will Show Speed While Device Is Unlocked. 'Always Show Speed' Will Show The Speed Even If No Data Transmission Is Happening.</string>
-		</dict>
-		<dict>
-			<key>cell</key>
-			<string>PSSwitchCell</string>
-			<key>default</key>
-			<false/>
-			<key>defaults</key>
-			<string>com.johnzaro.networkspeed13prefs</string>
-			<key>key</key>
-			<string>showUploadSpeed</string>
-			<key>label</key>
-			<string>Show Upload Speed</string>
-			<key>PostNotification</key>
-			<string>com.johnzaro.networkspeed13prefs/reloadprefs</string>
-		</dict>
-		<dict>
-			<key>cell</key>
-			<string>PSEditTextCell</string>
-			<key>default</key>
-			<string>↑</string>
-			<key>defaults</key>
-			<string>com.johnzaro.networkspeed13prefs</string>
-			<key>key</key>
-			<string>uploadPrefix</string>
-			<key>label</key>
-			<string>Upload Prefix</string>
-			<key>PostNotification</key>
-			<string>com.johnzaro.networkspeed13prefs/reloadprefs</string>
-		</dict>
-		<dict>
-			<key>cell</key>
-			<string>PSSwitchCell</string>
-			<key>default</key>
-			<false/>
-			<key>defaults</key>
-			<string>com.johnzaro.networkspeed13prefs</string>
-			<key>key</key>
-			<string>showDownloadSpeed</string>
-			<key>label</key>
-			<string>Show Download Speed</string>
-			<key>PostNotification</key>
-			<string>com.johnzaro.networkspeed13prefs/reloadprefs</string>
-		</dict>
-		<dict>
-			<key>cell</key>
-			<string>PSEditTextCell</string>
-			<key>default</key>
-			<string>↓</string>
-			<key>defaults</key>
-			<string>com.johnzaro.networkspeed13prefs</string>
-			<key>key</key>
-			<string>downloadPrefix</string>
-			<key>label</key>
-			<string>Download Prefix</string>
-			<key>PostNotification</key>
-			<string>com.johnzaro.networkspeed13prefs/reloadprefs</string>
-		</dict>
-		<dict>
-			<key>cell</key>
-			<string>PSSwitchCell</string>
-			<key>default</key>
-			<false/>
-			<key>defaults</key>
-			<string>com.johnzaro.networkspeed13prefs</string>
-			<key>key</key>
-			<string>showDownloadSpeedFirst</string>
-			<key>label</key>
-			<string>Show Download Speed First</string>
-			<key>PostNotification</key>
-			<string>com.johnzaro.networkspeed13prefs/reloadprefs</string>
-		</dict>
-		<dict>
-			<key>cell</key>
-			<string>PSSwitchCell</string>
-			<key>default</key>
-			<false/>
-			<key>defaults</key>
-			<string>com.johnzaro.networkspeed13prefs</string>
-			<key>key</key>
-			<string>showSecondSpeedInNewLine</string>
-			<key>label</key>
-			<string>Show 2nd Speed In New Line</string>
-			<key>PostNotification</key>
-			<string>com.johnzaro.networkspeed13prefs/reloadprefs</string>
+			<string>'SHOW ON LOCK SCREEN' WILL SHOW NETWORK SPEED WHILE DEVICE IS UNLOCKED. 'ALWAYS SHOW SPEED' WILL SHOW THE SPEED EVEN IF NO DATA TRANSMISSION IS HAPPENING.</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -136,7 +52,21 @@
 			<key>label</key>
 			<string>Show On Lock Screen</string>
 			<key>PostNotification</key>
-			<string>com.johnzaro.networkspeed13prefs/reloadprefs</string>
+			<string>com.johnzaro.networkspeed13prefs/ReloadPrefs</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<false/>
+			<key>defaults</key>
+			<string>com.johnzaro.networkspeed13prefs</string>
+			<key>key</key>
+			<string>hideOnLandscape</string>
+			<key>label</key>
+			<string>Hide On Landscape</string>
+			<key>PostNotification</key>
+			<string>com.johnzaro.networkspeed13prefs/ReloadPrefs</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -150,13 +80,129 @@
 			<key>label</key>
 			<string>Always Show Speed</string>
 			<key>PostNotification</key>
-			<string>com.johnzaro.networkspeed13prefs/reloadprefs</string>
+			<string>com.johnzaro.networkspeed13prefs/ReloadPrefs</string>
 		</dict>
 		<dict>
 			<key>cell</key>
 			<string>PSGroupCell</string>
+			<key>label</key>
+			<string>WHAT TO SHOW</string>
 			<key>footerText</key>
-			<string>It Is Added Between The Two Speeds When They Are In The Same Line</string>
+			<string>IF 'COMBINE SPEEDS' OPTION IS SELECTED, NETWORK SPEED WILL SHOW DOWN SPEED + UP SPEED ADDED TOGETHER WITH THE INDICATOR OF THE FASTER SPEED.</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSegmentCell</string>
+			<key>default</key>
+			<integer>0</integer>
+			<key>defaults</key>
+			<string>com.johnzaro.networkspeed13prefs</string>
+			<key>key</key>
+			<string>separateSpeeds</string>
+			<key>validTitles</key>
+			<array>
+      			<string>Separate speeds</string>
+      			<string>Combine speeds</string>
+			</array>
+      		<key>validValues</key>
+			<array>
+      			<string>0</string>
+      			<string>1</string>
+			</array>
+			<key>PostNotification</key>
+			<string>com.johnzaro.networkspeed13prefs/ReloadPrefs</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>label</key>
+			<string>SETTINGS FOR SEPARATE SPEEDS</string>
+			<key>footerText</key>
+			<string>SEPARATOR IS ADDED BETWEEN THE TWO SPEEDS WHEN THEY ARE IN THE SAME LINE.</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<false/>
+			<key>defaults</key>
+			<string>com.johnzaro.networkspeed13prefs</string>
+			<key>key</key>
+			<string>showUploadSpeed</string>
+			<key>label</key>
+			<string>Show Upload Speed</string>
+			<key>PostNotification</key>
+			<string>com.johnzaro.networkspeed13prefs/ReloadPrefs</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSEditTextCell</string>
+			<key>default</key>
+			<string>↑</string>
+			<key>defaults</key>
+			<string>com.johnzaro.networkspeed13prefs</string>
+			<key>key</key>
+			<string>uploadPrefix</string>
+			<key>label</key>
+			<string>Upload Prefix</string>
+			<key>PostNotification</key>
+			<string>com.johnzaro.networkspeed13prefs/ReloadPrefs</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<false/>
+			<key>defaults</key>
+			<string>com.johnzaro.networkspeed13prefs</string>
+			<key>key</key>
+			<string>showDownloadSpeed</string>
+			<key>label</key>
+			<string>Show Download Speed</string>
+			<key>PostNotification</key>
+			<string>com.johnzaro.networkspeed13prefs/ReloadPrefs</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSEditTextCell</string>
+			<key>default</key>
+			<string>↓</string>
+			<key>defaults</key>
+			<string>com.johnzaro.networkspeed13prefs</string>
+			<key>key</key>
+			<string>downloadPrefix</string>
+			<key>label</key>
+			<string>Download Prefix</string>
+			<key>PostNotification</key>
+			<string>com.johnzaro.networkspeed13prefs/ReloadPrefs</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<false/>
+			<key>defaults</key>
+			<string>com.johnzaro.networkspeed13prefs</string>
+			<key>key</key>
+			<string>showDownloadSpeedFirst</string>
+			<key>label</key>
+			<string>Show Download Speed First</string>
+			<key>PostNotification</key>
+			<string>com.johnzaro.networkspeed13prefs/ReloadPrefs</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<false/>
+			<key>defaults</key>
+			<string>com.johnzaro.networkspeed13prefs</string>
+			<key>key</key>
+			<string>showSecondSpeedInNewLine</string>
+			<key>label</key>
+			<string>Show 2nd Speed In New Line</string>
+			<key>PostNotification</key>
+			<string>com.johnzaro.networkspeed13prefs/ReloadPrefs</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -170,7 +216,7 @@
 			<key>label</key>
 			<string>Separator</string>
 			<key>PostNotification</key>
-			<string>com.johnzaro.networkspeed13prefs/reloadprefs</string>
+			<string>com.johnzaro.networkspeed13prefs/ReloadPrefs</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -200,7 +246,7 @@
 			<key>label</key>
 			<string>Data Unit</string>
 			<key>PostNotification</key>
-			<string>com.johnzaro.networkspeed13prefs/reloadprefs</string>
+			<string>com.johnzaro.networkspeed13prefs/ReloadPrefs</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -222,7 +268,7 @@
 			<key>label</key>
 			<string>Portrait X</string>
 			<key>PostNotification</key>
-			<string>com.johnzaro.networkspeed13prefs/reloadprefs</string>
+			<string>com.johnzaro.networkspeed13prefs/ReloadPrefs</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -238,7 +284,7 @@
 			<key>label</key>
 			<string>Portrait Y</string>
 			<key>PostNotification</key>
-			<string>com.johnzaro.networkspeed13prefs/reloadprefs</string>
+			<string>com.johnzaro.networkspeed13prefs/ReloadPrefs</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -260,7 +306,7 @@
 			<key>label</key>
 			<string>Landscape X</string>
 			<key>PostNotification</key>
-			<string>com.johnzaro.networkspeed13prefs/reloadprefs</string>
+			<string>com.johnzaro.networkspeed13prefs/ReloadPrefs</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -276,11 +322,27 @@
 			<key>label</key>
 			<string>Landscape Y</string>
 			<key>PostNotification</key>
-			<string>com.johnzaro.networkspeed13prefs/reloadprefs</string>
+			<string>com.johnzaro.networkspeed13prefs/ReloadPrefs</string>
 		</dict>
 		<dict>
 			<key>cell</key>
 			<string>PSGroupCell</string>
+			<key>footerText</key>
+			<string>IF 'FOLLOW DEVICE ORIENTATION' OPTION IS DISABLED, THE NETWORK SPEED WILL ALWAYS STAY IN PORTRAIT POSITION.</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<false/>
+			<key>defaults</key>
+			<string>com.johnzaro.networkspeed13prefs</string>
+			<key>key</key>
+			<string>animateMovement</string>
+			<key>label</key>
+			<string>Animate Movement</string>
+			<key>PostNotification</key>
+			<string>com.johnzaro.networkspeed13prefs/ReloadPrefs</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -294,7 +356,7 @@
 			<key>label</key>
 			<string>Follow Device Orientation</string>
 			<key>PostNotification</key>
-			<string>com.johnzaro.networkspeed13prefs/reloadprefs</string>
+			<string>com.johnzaro.networkspeed13prefs/ReloadPrefs</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -316,7 +378,7 @@
 			<key>label</key>
 			<string>Width</string>
 			<key>PostNotification</key>
-			<string>com.johnzaro.networkspeed13prefs/reloadprefs</string>
+			<string>com.johnzaro.networkspeed13prefs/ReloadPrefs</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -332,7 +394,7 @@
 			<key>label</key>
 			<string>Height</string>
 			<key>PostNotification</key>
-			<string>com.johnzaro.networkspeed13prefs/reloadprefs</string>
+			<string>com.johnzaro.networkspeed13prefs/ReloadPrefs</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -352,7 +414,27 @@
 			<key>label</key>
 			<string>Enable Background Color</string>
 			<key>PostNotification</key>
-			<string>com.johnzaro.networkspeed13prefs/reloadprefs</string>
+			<string>com.johnzaro.networkspeed13prefs/ReloadPrefs</string>
+		</dict>
+		<dict>
+			<key>cellClass</key>
+			<string>HBStepperTableCell</string>
+			<key>default</key>
+			<real>3</real>
+			<key>defaults</key>
+			<string>com.johnzaro.networkspeed13prefs</string>
+			<key>key</key>
+			<string>margin</string>
+			<key>label</key>
+			<string>Margin: %i pixels</string>
+			<key>singularLabel</key>
+			<string>Margin: 1 pixel</string>
+			<key>max</key>
+			<real>20</real>
+			<key>min</key>
+			<real>0</real>
+			<key>PostNotification</key>
+			<string>com.johnzaro.networkspeed13prefs/ReloadPrefs</string>
 		</dict>
 		<dict>
 			<key>cellClass</key>
@@ -372,7 +454,7 @@
 			<key>min</key>
 			<real>0</real>
 			<key>PostNotification</key>
-			<string>com.johnzaro.networkspeed13prefs/reloadprefs</string>
+			<string>com.johnzaro.networkspeed13prefs/ReloadPrefs</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -386,7 +468,7 @@
 			<key>label</key>
 			<string>Custom Background Color</string>
 			<key>PostNotification</key>
-			<string>com.johnzaro.networkspeed13prefs/reloadprefs</string>
+			<string>com.johnzaro.networkspeed13prefs/ReloadPrefs</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -404,7 +486,7 @@
 				<key>alpha</key>
 				<true/>
 				<key>PostNotification</key>
-				<string>com.johnzaro.networkspeed13prefs/reloadprefs</string>
+				<string>com.johnzaro.networkspeed13prefs/ReloadPrefs</string>
 			</dict>
 			<key>label</key>
 			<string>Custom Background Color</string>
@@ -431,7 +513,7 @@
 			<key>label</key>
 			<string>Font Size</string>
 			<key>PostNotification</key>
-			<string>com.johnzaro.networkspeed13prefs/reloadprefs</string>
+			<string>com.johnzaro.networkspeed13prefs/ReloadPrefs</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -445,7 +527,7 @@
 			<key>label</key>
 			<string>Bold Font</string>
 			<key>PostNotification</key>
-			<string>com.johnzaro.networkspeed13prefs/reloadprefs</string>
+			<string>com.johnzaro.networkspeed13prefs/ReloadPrefs</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -465,7 +547,7 @@
 			<key>label</key>
 			<string>Enable Custom Text Color</string>
 			<key>PostNotification</key>
-			<string>com.johnzaro.networkspeed13prefs/reloadprefs</string>
+			<string>com.johnzaro.networkspeed13prefs/ReloadPrefs</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -483,7 +565,7 @@
 				<key>alpha</key>
 				<false/>
 				<key>PostNotification</key>
-				<string>com.johnzaro.networkspeed13prefs/reloadprefs</string>
+				<string>com.johnzaro.networkspeed13prefs/ReloadPrefs</string>
 			</dict>
 			<key>label</key>
 			<string>Custom Color</string>
@@ -520,7 +602,7 @@
 			<key>label</key>
 			<string>Alignment</string>
 			<key>PostNotification</key>
-			<string>com.johnzaro.networkspeed13prefs/reloadprefs</string>
+			<string>com.johnzaro.networkspeed13prefs/ReloadPrefs</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -566,7 +648,7 @@
 			<key>label</key>
 			<string>Double Tap To Open App</string>
 			<key>PostNotification</key>
-			<string>com.johnzaro.networkspeed13prefs/reloadprefs</string>
+			<string>com.johnzaro.networkspeed13prefs/ReloadPrefs</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -588,7 +670,7 @@
 			<key>label</key>
 			<string>Hold To Open App</string>
 			<key>PostNotification</key>
-			<string>com.johnzaro.networkspeed13prefs/reloadprefs</string>
+			<string>com.johnzaro.networkspeed13prefs/ReloadPrefs</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -618,7 +700,7 @@
 			<key>label</key>
 			<string>Black List Apps</string>
 			<key>PostNotification</key>
-			<string>com.johnzaro.networkspeed13prefs/reloadprefs</string>
+			<string>com.johnzaro.networkspeed13prefs/ReloadPrefs</string>
 		</dict>
 		<dict>
 			<key>cell</key>

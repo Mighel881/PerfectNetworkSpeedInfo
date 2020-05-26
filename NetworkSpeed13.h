@@ -4,31 +4,36 @@
 - (BOOL)isPresented;
 @end
 
-@interface UILabelWithInsets: UILabel
+@interface SBControlCenterController: NSObject
++ (id)sharedInstance;
+- (BOOL)isVisible;
 @end
 
 @interface NetworkSpeed: NSObject
 {
     UIWindow *networkSpeedWindow;
-    UILabelWithInsets *networkSpeedLabel;
+    UILabel *networkSpeedLabel;
+    UIColor *backupForegroundColor;
+    UIColor *backupBackgroundColor;
     SBCoverSheetPresentationManager *coverSheetPresentationManagerInstance;
+    SBControlCenterController *controlCenterControllerInstance;
 }
 - (id)init;
 - (void)updateOrientation;
 - (void)updateFrame;
-- (void)updateNetworkSpeedSize;
+- (void)updateNetworkSpeedLabelSize;
 - (void)updateTextColor:(UIColor *)color;
 - (void)openDoubleTapApp;
 - (void)openHoldApp;
-- (void)setHidden:(BOOL)arg;
+- (void)hideIfNeeded;
+@end
+
+@interface UIScreen ()
+- (CGRect)_referenceBounds;
 @end
 
 @interface UIWindow ()
 - (void)_setSecure:(BOOL)arg1;
-@end
-
-@interface UIWindow ()
-- (void)_setSecure: (BOOL)arg1;
 @end
 
 @interface SBApplication: NSObject
@@ -51,10 +56,6 @@
 
 @interface _UIStatusBar : UIView
 @property(nonatomic, retain) _UIStatusBarStyleAttributes *styleAttributes;
-@end
-
-@interface CALayer ()
-- (void)setContinuousCorners:(BOOL)arg1;
 @end
 
 @interface UIApplication ()

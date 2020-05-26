@@ -13,10 +13,6 @@ static const long MEGABITS = 1000000;
 static const long KILOBYTES = 1 << 10;
 static const long MEGABYTES = 1 << 20;
 
-static double screenWidth;
-static double screenHeight;
-static UIDeviceOrientation orientationOld;
-
 __strong static id networkSpeedObject;
 
 static BOOL shouldUpdateSpeedLabel;
@@ -30,6 +26,8 @@ typedef struct
 static HBPreferences *pref;
 static BOOL enabled;
 static BOOL showOnLockScreen;
+static BOOL hideOnLandscape;
+static NSInteger separateSpeeds;
 static BOOL showDownloadSpeedFirst;
 static BOOL showSecondSpeedInNewLine;
 static BOOL showUploadSpeed;
@@ -39,7 +37,8 @@ static NSString *downloadPrefix;
 static NSString *separator;
 static long dataUnit;
 static BOOL backgroundColorEnabled;
-static float backgroundCornerRadius;
+static NSInteger margin;
+static CGFloat backgroundCornerRadius;
 static BOOL customBackgroundColorEnabled;
 static UIColor *customBackgroundColor;
 static BOOL showAlways;
@@ -48,6 +47,7 @@ static double portraitY;
 static double landscapeX;
 static double landscapeY;
 static BOOL followDeviceOrientation;
+static BOOL animateMovement;
 static double width;
 static double height;
 static long fontSize;
@@ -63,7 +63,13 @@ static NSString *holdIdentifier;
 static BOOL enableBlackListedApps;
 static NSArray *blackListedApps;
 
+static double screenWidth;
+static double screenHeight;
+static BOOL shouldHideBasedOnOrientation = NO;
 static BOOL isBlacklistedAppInFront = NO;
+static BOOL isOnLandscape;
+static UIDeviceOrientation deviceOrientation;
+static UIDeviceOrientation orientationOld;
 
 // Got some help from similar network speed tweaks by julioverne & n3d1117
 
@@ -71,71 +77,68 @@ NSString* formatSpeed(long bytes)
 {
 	if(dataUnit == 0) // BYTES
 	{
-		if (bytes < KILOBYTES) return @"0KB/s";
-		else if (bytes < MEGABYTES) return [NSString stringWithFormat:@"%.0fKB/s", (double)bytes / KILOBYTES];
+		if(bytes < KILOBYTES) return @"0KB/s";
+		else if(bytes < MEGABYTES) return [NSString stringWithFormat:@"%.0fKB/s", (double)bytes / KILOBYTES];
 		else return [NSString stringWithFormat:@"%.2fMB/s", (double)bytes / MEGABYTES];
 	}
 	else // BITS
 	{
-		if (bytes < KILOBITS) return @"0Kb/s";
-		else if (bytes < MEGABITS) return [NSString stringWithFormat:@"%.0fKb/s", (double)bytes / KILOBITS];
+		if(bytes < KILOBITS) return @"0Kb/s";
+		else if(bytes < MEGABITS) return [NSString stringWithFormat:@"%.0fKb/s", (double)bytes / KILOBITS];
 		else return [NSString stringWithFormat:@"%.2fMb/s", (double)bytes / MEGABITS];
 	}
 }
 
 UpDownBytes getUpDownBytes()
 {
-	@autoreleasepool
+	struct ifaddrs *ifa_list = 0, *ifa;
+	UpDownBytes upDownBytes;
+	upDownBytes.inputBytes = 0;
+	upDownBytes.outputBytes = 0;
+	
+	if (getifaddrs(&ifa_list) == -1) return upDownBytes;
+
+	for (ifa = ifa_list; ifa; ifa = ifa->ifa_next)
 	{
-		struct ifaddrs *ifa_list = 0, *ifa;
-		UpDownBytes upDownBytes;
-		upDownBytes.inputBytes = 0;
-		upDownBytes.outputBytes = 0;
+		if (AF_LINK != ifa->ifa_addr->sa_family || 
+			(!(ifa->ifa_flags & IFF_UP) && !(ifa->ifa_flags & IFF_RUNNING)) || 
+			ifa->ifa_data == 0) continue;
 		
-		if (getifaddrs(&ifa_list) == -1) return upDownBytes;
+		struct if_data *if_data = (struct if_data *)ifa->ifa_data;
 
-		for (ifa = ifa_list; ifa; ifa = ifa->ifa_next)
-		{
-			if (AF_LINK != ifa->ifa_addr->sa_family || 
-				(!(ifa->ifa_flags & IFF_UP) && !(ifa->ifa_flags & IFF_RUNNING)) || 
-				ifa->ifa_data == 0) continue;
-			
-			struct if_data *if_data = (struct if_data *)ifa->ifa_data;
-
-			upDownBytes.inputBytes += if_data->ifi_ibytes;
-			upDownBytes.outputBytes += if_data->ifi_obytes;
-		}
-		
-		freeifaddrs(ifa_list);
-		return upDownBytes;
+		upDownBytes.inputBytes += if_data->ifi_ibytes;
+		upDownBytes.outputBytes += if_data->ifi_obytes;
 	}
+	
+	freeifaddrs(ifa_list);
+	return upDownBytes;
 }
 
 static NSMutableString* formattedString()
 {
-	@autoreleasepool
+	NSMutableString* mutableString = [[NSMutableString alloc] init];
+	
+	UpDownBytes upDownBytes = getUpDownBytes();
+	long upDiff = (upDownBytes.outputBytes - oldUpSpeed) / updateInterval;
+	long downDiff = (upDownBytes.inputBytes - oldDownSpeed) / updateInterval;
+	oldUpSpeed = upDownBytes.outputBytes;
+	oldDownSpeed = upDownBytes.inputBytes;
+
+	if(!showAlways && (upDiff < 2 * KILOBYTES && downDiff < 2 * KILOBYTES))
 	{
-		NSMutableString* mutableString = [[NSMutableString alloc] init];
-		
-		UpDownBytes upDownBytes = getUpDownBytes();
-		long upDiff = (upDownBytes.outputBytes - oldUpSpeed) / updateInterval;
-		long downDiff = (upDownBytes.inputBytes - oldDownSpeed) / updateInterval;
-		oldUpSpeed = upDownBytes.outputBytes;
-		oldDownSpeed = upDownBytes.inputBytes;
+		shouldUpdateSpeedLabel = NO;
+		return nil;
+	}
+	else shouldUpdateSpeedLabel = YES;
 
-		if(!showAlways && (upDiff < 2 * KILOBYTES && downDiff < 2 * KILOBYTES) || upDiff > 500 * MEGABYTES && downDiff > 500 * MEGABYTES)
-		{
-			shouldUpdateSpeedLabel = NO;
-			return nil;
-		}
-		else shouldUpdateSpeedLabel = YES;
+	if(dataUnit == 1) // BITS
+	{
+		upDiff *= 8;
+		downDiff *= 8;
+	}
 
-		if(dataUnit == 1) // BITS
-		{
-			upDiff *= 8;
-			downDiff *= 8;
-		}
-
+	if(separateSpeeds == 0)
+	{
 		if(showDownloadSpeedFirst)
 		{
 			if(showDownloadSpeed) [mutableString appendString: [NSString stringWithFormat: @"%@%@", downloadPrefix, formatSpeed(downDiff)]];
@@ -162,41 +165,40 @@ static NSMutableString* formattedString()
 				[mutableString appendString: [NSString stringWithFormat: @"%@%@", downloadPrefix, formatSpeed(downDiff)]];
 			}
 		}
-		
-		return [mutableString copy];
 	}
+	else
+	{
+		long totalSpeed = upDiff + downDiff;
+		if(dataUnit == 0 && totalSpeed >= KILOBYTES || dataUnit == 1 && totalSpeed >= KILOBITS)
+		{
+			if(upDiff > downDiff)
+				[mutableString appendString: uploadPrefix];
+			else
+				[mutableString appendString: downloadPrefix];
+		}
+		[mutableString appendString: formatSpeed(totalSpeed)];
+	}
+	
+	return [mutableString copy];
 }
 
 static void orientationChanged()
 {
-	if(followDeviceOrientation && networkSpeedObject) 
+	deviceOrientation = [[UIApplication sharedApplication] _frontMostAppOrientation];
+	if(deviceOrientation == UIDeviceOrientationLandscapeRight || deviceOrientation == UIDeviceOrientationLandscapeLeft)
+		isOnLandscape = YES;
+	else
+		isOnLandscape = NO;
+
+	if((hideOnLandscape || followDeviceOrientation) && networkSpeedObject) 
 		[networkSpeedObject updateOrientation];
 }
 
 static void loadDeviceScreenDimensions()
 {
-	UIDeviceOrientation orientation = [[UIApplication sharedApplication] _frontMostAppOrientation];
-	if(orientation == UIDeviceOrientationLandscapeLeft || orientation == UIDeviceOrientationLandscapeRight)
-	{
-		screenWidth = [[UIScreen mainScreen] bounds].size.height;
-		screenHeight = [[UIScreen mainScreen] bounds].size.width;
-	}
-	else
-	{
-		screenWidth = [[UIScreen mainScreen] bounds].size.width;
-		screenHeight = [[UIScreen mainScreen] bounds].size.height;
-	}
+	screenWidth = [[UIScreen mainScreen] _referenceBounds].size.width;
+	screenHeight = [[UIScreen mainScreen] _referenceBounds].size.height;
 }
-
-@implementation UILabelWithInsets
-
-- (void)drawTextInRect: (CGRect)rect
-{
-    UIEdgeInsets insets = {0, 5, 0, 5};
-    [super drawTextInRect: UIEdgeInsetsInsetRect(rect, insets)];
-}
-
-@end
 
 @implementation NetworkSpeed
 
@@ -205,36 +207,35 @@ static void loadDeviceScreenDimensions()
 		self = [super init];
 		if(self)
 		{
-			@try
-			{
-				networkSpeedWindow = [[UIWindow alloc] initWithFrame: CGRectMake(0, 0, width, height)];
-				[networkSpeedWindow setHidden: NO];
-				[networkSpeedWindow setAlpha: 1];
-				[networkSpeedWindow _setSecure: YES];
-				[networkSpeedWindow setUserInteractionEnabled: YES];
-				[[networkSpeedWindow layer] setAnchorPoint: CGPointZero];
-				
-				networkSpeedLabel = [[UILabelWithInsets alloc] initWithFrame: CGRectMake(0, 0, width, height)];
-				[[networkSpeedLabel layer] setMasksToBounds: YES];
-				[networkSpeedWindow addSubview: networkSpeedLabel];
+			networkSpeedLabel = [[UILabel alloc] initWithFrame: CGRectMake(0, 0, 0, 0)];
+			[networkSpeedLabel setAdjustsFontSizeToFitWidth: YES];
 
-				UITapGestureRecognizer *tapGestureRecognizer = [[UITapGestureRecognizer alloc] initWithTarget: self action: @selector(openDoubleTapApp)];
-				[tapGestureRecognizer setNumberOfTapsRequired: 2];
-				[networkSpeedWindow addGestureRecognizer: tapGestureRecognizer];
+			UITapGestureRecognizer *tapGestureRecognizer = [[UITapGestureRecognizer alloc] initWithTarget: self action: @selector(openDoubleTapApp)];
+			[tapGestureRecognizer setNumberOfTapsRequired: 2];
 
-				UILongPressGestureRecognizer *holdGestureRecognizer = [[UILongPressGestureRecognizer alloc] initWithTarget: self action: @selector(openHoldApp)];
-				[networkSpeedWindow addGestureRecognizer: holdGestureRecognizer];
+			UILongPressGestureRecognizer *holdGestureRecognizer = [[UILongPressGestureRecognizer alloc] initWithTarget: self action: @selector(openHoldApp)];
 
-				coverSheetPresentationManagerInstance = [%c(SBCoverSheetPresentationManager) sharedInstance];
+			networkSpeedWindow = [[UIWindow alloc] initWithFrame: CGRectMake(0, 0, 0, 0)];
+			[networkSpeedWindow setWindowLevel: 100000];
+			[networkSpeedWindow _setSecure: YES];
+			[[networkSpeedWindow layer] setAnchorPoint: CGPointZero];
+			[networkSpeedWindow addSubview: networkSpeedLabel];
+			[networkSpeedWindow addGestureRecognizer: tapGestureRecognizer];
+			[networkSpeedWindow addGestureRecognizer: holdGestureRecognizer];
 
-				[self updateFrame];
+			coverSheetPresentationManagerInstance = [%c(SBCoverSheetPresentationManager) sharedInstance];
+			controlCenterControllerInstance = [%c(SBControlCenterController) sharedInstance];
 
-				[NSTimer scheduledTimerWithTimeInterval: updateInterval target: self selector: @selector(updateText) userInfo: nil repeats: YES];
+			deviceOrientation = [[UIApplication sharedApplication] _frontMostAppOrientation];
 
-				CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, (CFNotificationCallback)&orientationChanged, CFSTR("com.apple.springboard.screenchanged"), NULL, 0);
-				CFNotificationCenterAddObserver(CFNotificationCenterGetLocalCenter(), NULL, (CFNotificationCallback)&orientationChanged, CFSTR("UIWindowDidRotateNotification"), NULL, CFNotificationSuspensionBehaviorCoalesce);
-			}
-			@catch (NSException *e) {}
+			backupForegroundColor = [UIColor whiteColor];
+			backupBackgroundColor = [[UIColor blackColor] colorWithAlphaComponent: 0.5];
+			[self updateFrame];
+
+			[NSTimer scheduledTimerWithTimeInterval: updateInterval target: self selector: @selector(updateText) userInfo: nil repeats: YES];
+
+			CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, (CFNotificationCallback)&orientationChanged, CFSTR("com.apple.springboard.screenchanged"), NULL, 0);
+			CFNotificationCenterAddObserver(CFNotificationCenterGetLocalCenter(), NULL, (CFNotificationCallback)&orientationChanged, CFSTR("UIWindowDidRotateNotification"), NULL, CFNotificationSuspensionBehaviorCoalesce);
 		}
 		return self;
 	}
@@ -247,13 +248,22 @@ static void loadDeviceScreenDimensions()
 
 	- (void)_updateFrame
 	{
-		if(showOnLockScreen) [networkSpeedWindow setWindowLevel: 1051];
-		else [networkSpeedWindow setWindowLevel: 1000];
+		orientationOld = nil;
+		
+		if(!backgroundColorEnabled)
+			[networkSpeedWindow setBackgroundColor: [UIColor clearColor]];
+		else
+		{
+			if(customBackgroundColorEnabled)
+				[networkSpeedWindow setBackgroundColor: customBackgroundColor];
+			else
+				[networkSpeedWindow setBackgroundColor: backupBackgroundColor];
+
+			[[networkSpeedWindow layer] setCornerRadius: backgroundCornerRadius];
+		}
 
 		[self updateNetworkSpeedLabelProperties];
-		[self updateNetworkSpeedSize];
-
-		orientationOld = nil;
+		[self updateNetworkSpeedLabelSize];
 		[self updateOrientation];
 	}
 
@@ -263,94 +273,77 @@ static void loadDeviceScreenDimensions()
 		else [networkSpeedLabel setFont: [UIFont systemFontOfSize: fontSize]];
 
 		[networkSpeedLabel setNumberOfLines: showSecondSpeedInNewLine ? 2 : 1];
-
 		[networkSpeedLabel setTextAlignment: alignment];
 
 		if(customTextColorEnabled)
 			[networkSpeedLabel setTextColor: customTextColor];
-		
-		if(!backgroundColorEnabled)
-			[networkSpeedLabel setBackgroundColor: [UIColor clearColor]];
 		else
-		{
-			[[networkSpeedLabel layer] setCornerRadius: backgroundCornerRadius];
-			[[networkSpeedLabel layer] setContinuousCorners: YES];
-			
-			if(customBackgroundColorEnabled)
-				[networkSpeedLabel setBackgroundColor: customBackgroundColor];
-		}
+			[networkSpeedLabel setTextColor: backupForegroundColor];
 	}
 
-	- (void)updateNetworkSpeedSize
+	- (void)updateNetworkSpeedLabelSize
 	{
 		CGRect frame = [networkSpeedLabel frame];
-		frame.size.width = width;
-		frame.size.height = height;
+		frame.origin.x = margin;
+		frame.origin.y = margin;
+		frame.size.width = width - 2 * margin;
+		frame.size.height = height - 2 * margin;
 		[networkSpeedLabel setFrame: frame];
-
-		frame = [networkSpeedWindow frame];
-		frame.size.width = width;
-		frame.size.height = height;
-		[networkSpeedWindow setFrame: frame];
 	}
 
 	- (void)updateOrientation
 	{
-		if(!followDeviceOrientation)
+		shouldHideBasedOnOrientation = hideOnLandscape && isOnLandscape;
+		[self hideIfNeeded];
+
+		if(deviceOrientation == orientationOld)
+			return;
+
+		CGAffineTransform newTransform;
+		CGRect frame = [networkSpeedWindow frame];
+
+		if(!followDeviceOrientation || deviceOrientation == UIDeviceOrientationPortrait)
 		{
-			CGRect frame = [networkSpeedWindow frame];
 			frame.origin.x = portraitX;
 			frame.origin.y = portraitY;
-			[networkSpeedWindow setFrame: frame];
+			newTransform = CGAffineTransformMakeRotation(DegreesToRadians(0));
 		}
-		else
+		else if(deviceOrientation == UIDeviceOrientationLandscapeLeft)
 		{
-			UIDeviceOrientation orientation = [[UIApplication sharedApplication] _frontMostAppOrientation];
-			if(orientation == orientationOld)
-				return;
-			
-			CGAffineTransform newTransform;
-			CGRect frame = [networkSpeedWindow frame];
+			frame.origin.x = screenWidth - landscapeY;
+			frame.origin.y = landscapeX;
+			newTransform = CGAffineTransformMakeRotation(DegreesToRadians(90));
+		}
+		else if(deviceOrientation == UIDeviceOrientationPortraitUpsideDown)
+		{
+			frame.origin.x = screenWidth - portraitX;
+			frame.origin.y = screenHeight - portraitY;
+			newTransform = CGAffineTransformMakeRotation(DegreesToRadians(180));
+		}
+		else if(deviceOrientation == UIDeviceOrientationLandscapeRight)
+		{
+			frame.origin.x = landscapeY;
+			frame.origin.y = screenHeight - landscapeX;
+			newTransform = CGAffineTransformMakeRotation(-DegreesToRadians(90));
+		}
 
-			switch (orientation)
-			{
-				case UIDeviceOrientationLandscapeRight:
-				{
-					frame.origin.x = landscapeY;
-					frame.origin.y = screenHeight - landscapeX;
-					newTransform = CGAffineTransformMakeRotation(-DegreesToRadians(90));
-					break;
-				}
-				case UIDeviceOrientationLandscapeLeft:
-				{
-					frame.origin.x = screenWidth - landscapeY;
-					frame.origin.y = landscapeX;
-					newTransform = CGAffineTransformMakeRotation(DegreesToRadians(90));
-					break;
-				}
-				case UIDeviceOrientationPortraitUpsideDown:
-				{
-					frame.origin.x = screenWidth - portraitX;
-					frame.origin.y = screenHeight - portraitY;
-					newTransform = CGAffineTransformMakeRotation(DegreesToRadians(180));
-					break;
-				}
-				case UIDeviceOrientationPortrait:
-				default:
-				{
-					frame.origin.x = portraitX;
-					frame.origin.y = portraitY;
-					newTransform = CGAffineTransformMakeRotation(DegreesToRadians(0));
-					break;
-				}
-			}
+		frame.size.width = isOnLandscape && followDeviceOrientation ? height : width;
+		frame.size.height = isOnLandscape && followDeviceOrientation ? width : height;
 
+		if(animateMovement)
+		{
 			[UIView animateWithDuration: 0.3f animations:
 			^{
 				[networkSpeedWindow setTransform: newTransform];
 				[networkSpeedWindow setFrame: frame];
-				orientationOld = orientation;
+				orientationOld = deviceOrientation;
 			} completion: nil];
+		}
+		else
+		{
+			[networkSpeedWindow setTransform: newTransform];
+			[networkSpeedWindow setFrame: frame];
+			orientationOld = deviceOrientation;
 		}
 	}
 
@@ -358,43 +351,47 @@ static void loadDeviceScreenDimensions()
 	{
 		if(networkSpeedWindow && networkSpeedLabel)
 		{
-			if(![coverSheetPresentationManagerInstance _isEffectivelyLocked])
+			[self hideIfNeeded];
+			if(![networkSpeedWindow isHidden])
 			{
 				NSString *speed = formattedString();
-				if(shouldUpdateSpeedLabel && ([coverSheetPresentationManagerInstance isPresented] || !isBlacklistedAppInFront))
-				{
-					[networkSpeedWindow setHidden: NO];
+				if(shouldUpdateSpeedLabel)
 					[networkSpeedLabel setText: speed];
-				}
-				else 
-				{
-					[networkSpeedWindow setHidden: YES];
+				else
 					[networkSpeedLabel setText: @""];
-				}
 			}
-			else [networkSpeedWindow setHidden: YES];
 		}
 	}
 
 	- (void)updateTextColor: (UIColor*)color
 	{
+		backupForegroundColor = color;
 		CGFloat r;
     	[color getRed: &r green: nil blue: nil alpha: nil];
 		if(r == 0 || r == 1)
 		{
-			if(!customTextColorEnabled) [networkSpeedLabel setTextColor: color];
+			if(!customTextColorEnabled)
+				[networkSpeedLabel setTextColor: color];
+
 			if(backgroundColorEnabled && !customBackgroundColorEnabled) 
 			{
-				if(r == 0) [networkSpeedLabel setBackgroundColor: [[UIColor whiteColor] colorWithAlphaComponent: 0.5]];
-				else [networkSpeedLabel setBackgroundColor: [[UIColor blackColor] colorWithAlphaComponent: 0.5]];
+				if(r == 0)
+					[networkSpeedWindow setBackgroundColor: [[UIColor whiteColor] colorWithAlphaComponent: 0.5]];
+				else
+					[networkSpeedWindow setBackgroundColor: [[UIColor blackColor] colorWithAlphaComponent: 0.5]];
+				backupBackgroundColor = [networkSpeedWindow backgroundColor];
 			}	
 
 		}
 	}
 
-	- (void)setHidden: (BOOL)arg
+	- (void)hideIfNeeded
 	{
-		[networkSpeedWindow setHidden: arg];
+		[networkSpeedWindow setHidden: 
+			[coverSheetPresentationManagerInstance _isEffectivelyLocked] 
+		 || [controlCenterControllerInstance isVisible] 
+		 || [coverSheetPresentationManagerInstance isPresented] && !showOnLockScreen
+		 || ![coverSheetPresentationManagerInstance isPresented] && (shouldHideBasedOnOrientation || isBlacklistedAppInFront)];
 	}
 
 	- (void)openDoubleTapApp
@@ -428,8 +425,7 @@ static void loadDeviceScreenDimensions()
 
 	NSString *currentApp = [(SBApplication*)[self _accessibilityFrontMostApplication] bundleIdentifier];
 	isBlacklistedAppInFront = blackListedApps && currentApp && [blackListedApps containsObject: currentApp];
-
-	[networkSpeedObject setHidden: isBlacklistedAppInFront];
+	[networkSpeedObject hideIfNeeded];
 }
 
 %end
@@ -448,37 +444,6 @@ static void loadDeviceScreenDimensions()
 
 static void settingsChanged(CFNotificationCenterRef center, void *observer, CFStringRef name, const void *object, CFDictionaryRef userInfo)
 {
-	if(!pref) pref = [[HBPreferences alloc] initWithIdentifier: @"com.johnzaro.networkspeed13prefs"];
-	enabled = [pref boolForKey: @"enabled"];
-	showOnLockScreen = [pref boolForKey: @"showOnLockScreen"];
-	showDownloadSpeedFirst = [pref boolForKey: @"showDownloadSpeedFirst"];
-	showSecondSpeedInNewLine = [pref boolForKey: @"showSecondSpeedInNewLine"];
-	showUploadSpeed = [pref boolForKey: @"showUploadSpeed"];
-	uploadPrefix = [pref objectForKey: @"uploadPrefix"];
-	showDownloadSpeed = [pref boolForKey: @"showDownloadSpeed"];
-	downloadPrefix = [pref objectForKey: @"downloadPrefix"];
-	separator = [pref objectForKey: @"separator"];
-	dataUnit = [pref integerForKey: @"dataUnit"];
-	backgroundColorEnabled = [pref boolForKey: @"backgroundColorEnabled"];
-	backgroundCornerRadius = [pref floatForKey: @"backgroundCornerRadius"];
-	customBackgroundColorEnabled = [pref boolForKey: @"customBackgroundColorEnabled"];
-	portraitX = [pref floatForKey: @"portraitX"];
-	portraitY = [pref floatForKey: @"portraitY"];
-	landscapeX = [pref floatForKey: @"landscapeX"];
-	landscapeY = [pref floatForKey: @"landscapeY"];
-	followDeviceOrientation = [pref boolForKey: @"followDeviceOrientation"];
-	width = [pref floatForKey: @"width"];
-	height = [pref floatForKey: @"height"];
-	fontSize = [pref integerForKey: @"fontSize"];
-	boldFont = [pref boolForKey: @"boldFont"];
-	customTextColorEnabled = [pref boolForKey: @"customTextColorEnabled"];
-	alignment = [pref integerForKey: @"alignment"];
-	showAlways = [pref boolForKey: @"showAlways"];
-	updateInterval = [pref doubleForKey: @"updateInterval"];
-	enableDoubleTap = [pref boolForKey: @"enableDoubleTap"];
-	enableHold = [pref boolForKey: @"enableHold"];
-	enableBlackListedApps = [pref boolForKey: @"enableBlackListedApps"];
-
 	if(backgroundColorEnabled && customBackgroundColorEnabled || customTextColorEnabled)
 	{
 		NSDictionary *preferencesDictionary = [NSDictionary dictionaryWithContentsOfFile: @"/var/mobile/Library/Preferences/com.johnzaro.networkspeed13prefs.colors.plist"];
@@ -517,45 +482,44 @@ static void settingsChanged(CFNotificationCenterRef center, void *observer, CFSt
 	@autoreleasepool
 	{
 		pref = [[HBPreferences alloc] initWithIdentifier: @"com.johnzaro.networkspeed13prefs"];
-		[pref registerDefaults:
-		@{
-			@"enabled": @NO,
-			@"showOnLockScreen": @NO,
-			@"showAlways": @NO,
-			@"showDownloadSpeedFirst": @NO,
-			@"showSecondSpeedInNewLine": @NO,
-			@"showUploadSpeed": @NO,
-			@"uploadPrefix": @"↑",
-			@"showDownloadSpeed": @NO,
-			@"downloadPrefix": @"↓",
-			@"separator": @" ",
-			@"dataUnit": @0,
-			@"backgroundColorEnabled": @NO,
-			@"backgroundCornerRadius": @6,
-			@"customBackgroundColorEnabled": @NO,
-			@"portraitX": @280,
-			@"portraitY": @32,
-			@"landscapeX": @735,
-			@"landscapeY": @32,
-			@"followDeviceOrientation": @NO,
-			@"width": @95,
-			@"height": @12,
-			@"fontSize": @8,
-			@"boldFont": @NO,
-			@"customTextColorEnabled": @NO,
-			@"alignment": @1,
-			@"updateInterval": @1.0,
-			@"enableDoubleTap": @NO,
-			@"enableHold": @NO,
-			@"enableBlackListedApps": @NO
-    	}];
-
-		settingsChanged(NULL, NULL, NULL, NULL, NULL);
-
+		[pref registerBool: &enabled default: NO forKey: @"enabled"];
 		if(enabled)
 		{
-			CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, settingsChanged, CFSTR("com.johnzaro.networkspeed13prefs/reloadprefs"), NULL, CFNotificationSuspensionBehaviorCoalesce);
+			[pref registerBool: &showOnLockScreen default: NO forKey: @"showOnLockScreen"];
+			[pref registerBool: &hideOnLandscape default: NO forKey: @"hideOnLandscape"];
+			[pref registerBool: &showAlways default: NO forKey: @"showAlways"];
+			[pref registerInteger: &separateSpeeds default: 0 forKey: @"separateSpeeds"];
+			[pref registerBool: &showDownloadSpeedFirst default: NO forKey: @"showDownloadSpeedFirst"];
+			[pref registerBool: &showSecondSpeedInNewLine default: NO forKey: @"showSecondSpeedInNewLine"];
+			[pref registerBool: &showUploadSpeed default: NO forKey: @"showUploadSpeed"];
+			[pref registerObject: &uploadPrefix default: @"↑" forKey: @"uploadPrefix"];
+			[pref registerBool: &showDownloadSpeed default: NO forKey: @"showDownloadSpeed"];
+			[pref registerObject: &downloadPrefix default: @"↓" forKey: @"downloadPrefix"];
+			[pref registerObject: &separator default: @" " forKey: @"separator"];
+			[pref registerInteger: &dataUnit default: 0 forKey: @"dataUnit"];
+			[pref registerBool: &backgroundColorEnabled default: NO forKey: @"backgroundColorEnabled"];
+			[pref registerInteger: &margin default: 3 forKey: @"margin"];
+			[pref registerFloat: &backgroundCornerRadius default: 6 forKey: @"backgroundCornerRadius"];
+			[pref registerBool: &customBackgroundColorEnabled default: NO forKey: @"customBackgroundColorEnabled"];
+			[pref registerFloat: &portraitX default: 280 forKey: @"portraitX"];
+			[pref registerFloat: &portraitY default: 32 forKey: @"portraitY"];
+			[pref registerFloat: &landscapeX default: 735 forKey: @"landscapeX"];
+			[pref registerFloat: &landscapeY default: 32 forKey: @"landscapeY"];
+			[pref registerBool: &followDeviceOrientation default: NO forKey: @"followDeviceOrientation"];
+			[pref registerBool: &animateMovement default: NO forKey: @"animateMovement"];
+			[pref registerFloat: &width default: 95 forKey: @"width"];
+			[pref registerFloat: &height default: 12 forKey: @"height"];
+			[pref registerInteger: &fontSize default: 8 forKey: @"fontSize"];
+			[pref registerBool: &boldFont default: NO forKey: @"boldFont"];
+			[pref registerBool: &customTextColorEnabled default: NO forKey: @"customTextColorEnabled"];
+			[pref registerInteger: &alignment default: 1 forKey: @"alignment"];
+			[pref registerDouble: &updateInterval default: 1 forKey: @"updateInterval"];
+			[pref registerBool: &enableDoubleTap default: NO forKey: @"enableDoubleTap"];
+			[pref registerBool: &enableHold default: NO forKey: @"enableHold"];
+			[pref registerBool: &enableBlackListedApps default: NO forKey: @"enableBlackListedApps"];
 
+			settingsChanged(NULL, NULL, NULL, NULL, NULL);
+			CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, settingsChanged, CFSTR("com.johnzaro.networkspeed13prefs/ReloadPrefs"), NULL, CFNotificationSuspensionBehaviorCoalesce);
 			%init;
 		}
 	}
