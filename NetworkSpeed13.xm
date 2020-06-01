@@ -26,6 +26,8 @@ typedef struct
 static HBPreferences *pref;
 static BOOL enabled;
 static BOOL showOnLockScreen;
+static BOOL showOnControlCenter;
+static BOOL hideOnFullScreen;
 static BOOL hideOnLandscape;
 static NSInteger separateSpeeds;
 static BOOL showDownloadSpeedFirst;
@@ -71,6 +73,8 @@ static BOOL isOnLandscape;
 static UIDeviceOrientation deviceOrientation;
 static UIDeviceOrientation orientationOld;
 
+static BOOL isStatusBarHidden;
+
 // Got some help from similar network speed tweaks by julioverne & n3d1117
 
 NSString* formatSpeed(long bytes)
@@ -100,9 +104,12 @@ UpDownBytes getUpDownBytes()
 
 	for (ifa = ifa_list; ifa; ifa = ifa->ifa_next)
 	{
-		if (AF_LINK != ifa->ifa_addr->sa_family || 
-			(!(ifa->ifa_flags & IFF_UP) && !(ifa->ifa_flags & IFF_RUNNING)) || 
-			ifa->ifa_data == 0) continue;
+		if (AF_LINK != ifa->ifa_addr->sa_family
+		|| (!(ifa->ifa_flags & IFF_UP) && !(ifa->ifa_flags & IFF_RUNNING))
+		|| ifa->ifa_data == 0
+		|| strstr(ifa->ifa_name, "lo0")
+		|| strstr(ifa->ifa_name, "utun"))
+			continue;
 		
 		struct if_data *if_data = (struct if_data *)ifa->ifa_data;
 
@@ -356,9 +363,12 @@ static void loadDeviceScreenDimensions()
 			{
 				NSString *speed = formattedString();
 				if(shouldUpdateSpeedLabel)
+				{
+					[networkSpeedWindow setAlpha: 1];
 					[networkSpeedLabel setText: speed];
+				}
 				else
-					[networkSpeedLabel setText: @""];
+					[networkSpeedWindow setAlpha: 0];
 			}
 		}
 	}
@@ -389,8 +399,9 @@ static void loadDeviceScreenDimensions()
 	{
 		[networkSpeedWindow setHidden: 
 			[coverSheetPresentationManagerInstance _isEffectivelyLocked] 
-		 || [controlCenterControllerInstance isVisible] 
 		 || [coverSheetPresentationManagerInstance isPresented] && !showOnLockScreen
+		 || isStatusBarHidden && hideOnFullScreen
+		 || [controlCenterControllerInstance isVisible] && !showOnControlCenter
 		 || ![coverSheetPresentationManagerInstance isPresented] && (shouldHideBasedOnOrientation || isBlacklistedAppInFront)];
 	}
 
@@ -442,6 +453,18 @@ static void loadDeviceScreenDimensions()
 
 %end
 
+%hook SBMainDisplaySceneLayoutStatusBarView
+
+- (void)_applyStatusBarHidden: (BOOL)arg1 withAnimation: (long long)arg2 toSceneWithIdentifier: (id)arg3
+{
+	isStatusBarHidden = arg1;
+	[networkSpeedObject hideIfNeeded];
+
+	%orig;
+}
+
+%end
+
 static void settingsChanged(CFNotificationCenterRef center, void *observer, CFStringRef name, const void *object, CFDictionaryRef userInfo)
 {
 	if(backgroundColorEnabled && customBackgroundColorEnabled || customTextColorEnabled)
@@ -486,6 +509,8 @@ static void settingsChanged(CFNotificationCenterRef center, void *observer, CFSt
 		if(enabled)
 		{
 			[pref registerBool: &showOnLockScreen default: NO forKey: @"showOnLockScreen"];
+			[pref registerBool: &showOnControlCenter default: NO forKey: @"showOnControlCenter"];
+			[pref registerBool: &hideOnFullScreen default: NO forKey: @"hideOnFullScreen"];
 			[pref registerBool: &hideOnLandscape default: NO forKey: @"hideOnLandscape"];
 			[pref registerBool: &showAlways default: NO forKey: @"showAlways"];
 			[pref registerInteger: &separateSpeeds default: 0 forKey: @"separateSpeeds"];
