@@ -627,8 +627,6 @@
       			<string>1</string>
       			<string>2</string>
 			</array>
-			<key>label</key>
-			<string>Alignment</string>
 			<key>PostNotification</key>
 			<string>com.johnzaro.networkspeed13prefs/ReloadPrefs</string>
 		</dict>
@@ -708,7 +706,7 @@
 			<key>action</key>
 			<string>selectHoldApp</string>
    	 	</dict>
-			<dict>
+		<dict>
 			<key>cell</key>
 			<string>PSGroupCell</string>
 			<key>label</key>

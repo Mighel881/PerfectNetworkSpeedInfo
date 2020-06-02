@@ -72,7 +72,6 @@ static BOOL isBlacklistedAppInFront = NO;
 static BOOL isOnLandscape;
 static UIDeviceOrientation deviceOrientation;
 static UIDeviceOrientation orientationOld;
-
 static BOOL isStatusBarHidden;
 
 // Got some help from similar network speed tweaks by julioverne & n3d1117
@@ -390,8 +389,7 @@ static void loadDeviceScreenDimensions()
 				else
 					[networkSpeedWindow setBackgroundColor: [[UIColor blackColor] colorWithAlphaComponent: 0.5]];
 				backupBackgroundColor = [networkSpeedWindow backgroundColor];
-			}	
-
+			}
 		}
 	}
 
@@ -443,12 +441,20 @@ static void loadDeviceScreenDimensions()
 
 %hook _UIStatusBar
 
--(void)setForegroundColor: (UIColor*)color
+- (void)setStyle: (long long)style
 {
 	%orig;
-	
-	if(networkSpeedObject && [self styleAttributes] && [[self styleAttributes] imageTintColor]) 
-		[networkSpeedObject updateTextColor: [[self styleAttributes] imageTintColor]];
+
+	if(networkSpeedObject) 
+		[networkSpeedObject updateTextColor: (style == 1) ? [UIColor whiteColor] : [UIColor blackColor]];
+}
+
+- (void)setStyle: (long long)style forPartWithIdentifier: (id)arg2
+{
+	%orig;
+
+	if(networkSpeedObject) 
+		[networkSpeedObject updateTextColor: (style == 1) ? [UIColor whiteColor] : [UIColor blackColor]];
 }
 
 %end
