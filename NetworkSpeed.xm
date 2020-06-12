@@ -509,9 +509,7 @@ static void loadDeviceScreenDimensions()
 -(void)updateWindowVisibilityForSwitcherContentController: (id)arg1
 {
 	%orig;
-
 	isAppSwitcherOpen = [self isMainSwitcherVisible];
-	[networkSpeedObject hideIfNeeded];
 }
 
 %end
@@ -521,17 +519,13 @@ static void loadDeviceScreenDimensions()
 - (void)viewWillAppear: (BOOL)arg1
 {
 	%orig;
-
 	isFolderOpen = YES;
-	[networkSpeedObject hideIfNeeded];
 }
 
 - (void)viewWillDisappear: (BOOL)arg1
 {
 	%orig;
-
 	isFolderOpen = NO;
-	[networkSpeedObject hideIfNeeded];
 }
 
 %end
