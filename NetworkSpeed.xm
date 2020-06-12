@@ -1,4 +1,4 @@
-#import "NetworkSpeed13.h"
+#import "NetworkSpeed.h"
 
 #import "SparkColourPickerUtils.h"
 #import "SparkAppList.h"
@@ -29,6 +29,7 @@ static BOOL showOnLockScreen;
 static BOOL showOnControlCenter;
 static BOOL hideOnFullScreen;
 static BOOL hideOnLandscape;
+static BOOL notchlessSupport;
 static NSInteger separateSpeeds;
 static BOOL showDownloadSpeedFirst;
 static BOOL showSecondSpeedInNewLine;
@@ -37,7 +38,8 @@ static NSString *uploadPrefix;
 static BOOL showDownloadSpeed;
 static NSString *downloadPrefix;
 static NSString *separator;
-static long dataUnit;
+static NSInteger dataUnit;
+static NSInteger minimumUnit;
 static BOOL backgroundColorEnabled;
 static NSInteger margin;
 static CGFloat backgroundCornerRadius;
@@ -67,12 +69,15 @@ static NSArray *blackListedApps;
 
 static double screenWidth;
 static double screenHeight;
-static BOOL shouldHideBasedOnOrientation = NO;
-static BOOL isBlacklistedAppInFront = NO;
-static BOOL isOnLandscape;
-static UIDeviceOrientation deviceOrientation;
 static UIDeviceOrientation orientationOld;
-static BOOL isStatusBarHidden;
+static UIDeviceOrientation deviceOrientation;
+static BOOL isBlacklistedAppInFront = NO;
+static BOOL shouldHideBasedOnOrientation = NO;
+static BOOL isOnLandscape;
+static BOOL isPeepStatusBarHidden = NO;
+static BOOL isStatusBarHidden = NO;
+static BOOL isAppSwitcherOpen = NO;
+static BOOL isFolderOpen = NO;
 
 // Got some help from similar network speed tweaks by julioverne & n3d1117
 
@@ -80,15 +85,27 @@ NSString* formatSpeed(long bytes)
 {
 	if(dataUnit == 0) // BYTES
 	{
-		if(bytes < KILOBYTES) return @"0KB/s";
-		else if(bytes < MEGABYTES) return [NSString stringWithFormat:@"%.0fKB/s", (double)bytes / KILOBYTES];
-		else return [NSString stringWithFormat:@"%.2fMB/s", (double)bytes / MEGABYTES];
+		if(bytes < KILOBYTES)
+		{
+			if(minimumUnit == 0)
+				return [NSString stringWithFormat: @"%ldB/s", bytes];
+			else
+				return @"0KB/s";
+		}
+		else if(bytes < MEGABYTES) return [NSString stringWithFormat: @"%.0fKB/s", (double)bytes / KILOBYTES];
+		else return [NSString stringWithFormat: @"%.2fMB/s", (double)bytes / MEGABYTES];
 	}
 	else // BITS
 	{
-		if(bytes < KILOBITS) return @"0Kb/s";
-		else if(bytes < MEGABITS) return [NSString stringWithFormat:@"%.0fKb/s", (double)bytes / KILOBITS];
-		else return [NSString stringWithFormat:@"%.2fMb/s", (double)bytes / MEGABITS];
+		if(bytes < KILOBITS)
+		{
+			if(minimumUnit == 0)
+				return [NSString stringWithFormat: @"%ldb/s", bytes];
+			else
+				return @"0Kb/s";
+		}
+		else if(bytes < MEGABITS) return [NSString stringWithFormat: @"%.0fKb/s", (double)bytes / KILOBITS];
+		else return [NSString stringWithFormat: @"%.2fMb/s", (double)bytes / MEGABITS];
 	}
 }
 
@@ -222,7 +239,6 @@ static void loadDeviceScreenDimensions()
 			UILongPressGestureRecognizer *holdGestureRecognizer = [[UILongPressGestureRecognizer alloc] initWithTarget: self action: @selector(openHoldApp)];
 
 			networkSpeedWindow = [[UIWindow alloc] initWithFrame: CGRectMake(0, 0, 0, 0)];
-			[networkSpeedWindow setWindowLevel: 100000];
 			[networkSpeedWindow _setSecure: YES];
 			[[networkSpeedWindow layer] setAnchorPoint: CGPointZero];
 			[networkSpeedWindow addSubview: networkSpeedLabel];
@@ -255,6 +271,11 @@ static void loadDeviceScreenDimensions()
 	- (void)_updateFrame
 	{
 		orientationOld = nil;
+
+		if(notchlessSupport)
+			[networkSpeedWindow setWindowLevel: 100000];
+		else
+			[networkSpeedWindow setWindowLevel: 1075];
 		
 		if(!backgroundColorEnabled)
 			[networkSpeedWindow setBackgroundColor: [UIColor clearColor]];
@@ -361,7 +382,7 @@ static void loadDeviceScreenDimensions()
 			if(![networkSpeedWindow isHidden])
 			{
 				NSString *speed = formattedString();
-				if(shouldUpdateSpeedLabel)
+				if(shouldUpdateSpeedLabel && !(isFolderOpen || isAppSwitcherOpen))
 				{
 					[networkSpeedWindow setAlpha: 1];
 					[networkSpeedLabel setText: speed];
@@ -400,7 +421,8 @@ static void loadDeviceScreenDimensions()
 		 || [coverSheetPresentationManagerInstance isPresented] && !showOnLockScreen
 		 || isStatusBarHidden && hideOnFullScreen
 		 || [controlCenterControllerInstance isVisible] && !showOnControlCenter
-		 || ![coverSheetPresentationManagerInstance isPresented] && (shouldHideBasedOnOrientation || isBlacklistedAppInFront)];
+		 || ![coverSheetPresentationManagerInstance isPresented] && (shouldHideBasedOnOrientation || isBlacklistedAppInFront)
+		 || isPeepStatusBarHidden];
 	}
 
 	- (void)openDoubleTapApp
@@ -417,7 +439,7 @@ static void loadDeviceScreenDimensions()
 
 @end
 
-%hook SpringBoard
+%hook SpringBoard // load module
 
 - (void)applicationDidFinishLaunching: (id)application
 {
@@ -428,7 +450,7 @@ static void loadDeviceScreenDimensions()
 		networkSpeedObject = [[NetworkSpeed alloc] init];
 }
 
--(void)frontDisplayDidChange: (id)arg1 
+-(void)frontDisplayDidChange: (id)arg1 // check if opened app is blacklisted
 {
 	%orig;
 
@@ -439,7 +461,7 @@ static void loadDeviceScreenDimensions()
 
 %end
 
-%hook _UIStatusBar
+%hook _UIStatusBar // update colors based on status bar colors
 
 - (void)setStyle: (long long)style
 {
@@ -459,14 +481,57 @@ static void loadDeviceScreenDimensions()
 
 %end
 
-%hook SBMainDisplaySceneLayoutStatusBarView
+%hook SBMainDisplaySceneLayoutStatusBarView // hide on full screen
 
 - (void)_applyStatusBarHidden: (BOOL)arg1 withAnimation: (long long)arg2 toSceneWithIdentifier: (id)arg3
 {
 	isStatusBarHidden = arg1;
 	[networkSpeedObject hideIfNeeded];
-
 	%orig;
+}
+
+%end
+
+%hook _UIStatusBarForegroundView // support for peep tweak
+
+- (void)setHidden: (BOOL)arg
+{
+	%orig;
+
+	isPeepStatusBarHidden = arg;
+	[networkSpeedObject hideIfNeeded];
+}
+
+%end
+
+%hook SBMainSwitcherViewController // check if app switcher is open
+
+-(void)updateWindowVisibilityForSwitcherContentController: (id)arg1
+{
+	%orig;
+
+	isAppSwitcherOpen = [self isMainSwitcherVisible];
+	[networkSpeedObject hideIfNeeded];
+}
+
+%end
+
+%hook SBFloatyFolderController // check if a folder is open
+
+- (void)viewWillAppear: (BOOL)arg1
+{
+	%orig;
+
+	isFolderOpen = YES;
+	[networkSpeedObject hideIfNeeded];
+}
+
+- (void)viewWillDisappear: (BOOL)arg1
+{
+	%orig;
+
+	isFolderOpen = NO;
+	[networkSpeedObject hideIfNeeded];
 }
 
 %end
@@ -519,6 +584,7 @@ static void settingsChanged(CFNotificationCenterRef center, void *observer, CFSt
 			[pref registerBool: &hideOnFullScreen default: NO forKey: @"hideOnFullScreen"];
 			[pref registerBool: &hideOnLandscape default: NO forKey: @"hideOnLandscape"];
 			[pref registerBool: &showAlways default: NO forKey: @"showAlways"];
+			[pref registerBool: &notchlessSupport default: NO forKey: @"notchlessSupport"];
 			[pref registerInteger: &separateSpeeds default: 0 forKey: @"separateSpeeds"];
 			[pref registerBool: &showDownloadSpeedFirst default: NO forKey: @"showDownloadSpeedFirst"];
 			[pref registerBool: &showSecondSpeedInNewLine default: NO forKey: @"showSecondSpeedInNewLine"];
@@ -528,6 +594,7 @@ static void settingsChanged(CFNotificationCenterRef center, void *observer, CFSt
 			[pref registerObject: &downloadPrefix default: @"↓" forKey: @"downloadPrefix"];
 			[pref registerObject: &separator default: @" " forKey: @"separator"];
 			[pref registerInteger: &dataUnit default: 0 forKey: @"dataUnit"];
+			[pref registerInteger: &minimumUnit default: 0 forKey: @"minimumUnit"];
 			[pref registerBool: &backgroundColorEnabled default: NO forKey: @"backgroundColorEnabled"];
 			[pref registerInteger: &margin default: 3 forKey: @"margin"];
 			[pref registerFloat: &backgroundCornerRadius default: 6 forKey: @"backgroundCornerRadius"];

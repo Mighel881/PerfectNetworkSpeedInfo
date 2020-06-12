@@ -49,3 +49,7 @@
 - (UIDeviceOrientation)_frontMostAppOrientation;
 - (BOOL)launchApplicationWithIdentifier:(id)arg1 suspended:(BOOL)arg2;
 @end
+
+@interface SBMainSwitcherViewController : UIViewController
+- (BOOL)isMainSwitcherVisible;
+@end

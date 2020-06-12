@@ -36,9 +36,13 @@
 			<key>cell</key>
 			<string>PSGroupCell</string>
 			<key>label</key>
-			<string>WHEN TO SHOW</string>
+			<string>VISIBILITY</string>
 			<key>footerText</key>
-			<string>'SHOW ON LOCK SCREEN' WILL SHOW NETWORK SPEED WHILE DEVICE IS UNLOCKED. 'ALWAYS SHOW SPEED' WILL SHOW THE SPEED EVEN IF NO DATA TRANSMISSION IS HAPPENING.</string>
+			<string>'SHOW ON LOCK SCREEN' WILL SHOW NETWORK SPEED WHILE DEVICE IS UNLOCKED.
+
+'ALWAYS SHOW SPEED' WILL SHOW THE SPEED EVEN IF NO DATA TRANSMISSION IS HAPPENING.
+
+'NOTCHLESS SUPPORT' OPTION HAS THE SIDE EFFECT OF SHOWING THE BLUETOOTH INFO ABOVE EVERY OTHER UI ELEMENT.</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -107,6 +111,20 @@
 			<string>showAlways</string>
 			<key>label</key>
 			<string>Always Show Speed</string>
+			<key>PostNotification</key>
+			<string>com.johnzaro.networkspeed13prefs/ReloadPrefs</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>default</key>
+			<false/>
+			<key>defaults</key>
+			<string>com.johnzaro.networkspeed13prefs</string>
+			<key>key</key>
+			<string>notchlessSupport</string>
+			<key>label</key>
+			<string>Notchless Support</string>
 			<key>PostNotification</key>
 			<string>com.johnzaro.networkspeed13prefs/ReloadPrefs</string>
 		</dict>
@@ -271,8 +289,34 @@
       			<string>0</string>
       			<string>1</string>
 			</array>
+			<key>PostNotification</key>
+			<string>com.johnzaro.networkspeed13prefs/ReloadPrefs</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
 			<key>label</key>
-			<string>Data Unit</string>
+			<string>MINIMUM UNIT</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSegmentCell</string>
+			<key>default</key>
+			<integer>0</integer>
+			<key>defaults</key>
+			<string>com.johnzaro.networkspeed13prefs</string>
+			<key>key</key>
+			<string>minimumUnit</string>
+			<key>validTitles</key>
+			<array>
+      			<string>B</string>
+      			<string>KB</string>
+			</array>
+      		<key>validValues</key>
+			<array>
+      			<string>0</string>
+      			<string>1</string>
+			</array>
 			<key>PostNotification</key>
 			<string>com.johnzaro.networkspeed13prefs/ReloadPrefs</string>
 		</dict>
@@ -764,7 +808,7 @@
 			<key>icon</key>
 			<string>github.png</string>
 			<key>url</key>
-   	 		<string>https://github.com/johnzaro/NetworkSpeed13</string>
+   	 		<string>https://github.com/johnzaro/NetworkSpeed</string>
 		</dict>
  		<dict>
         	<key>cell</key>
@@ -818,6 +862,6 @@
         </dict>
 	</array>
 	<key>title</key>
-	<string>NetworkSpeed13</string>
+	<string>NetworkSpeed</string>
 </dict>
 </plist>
