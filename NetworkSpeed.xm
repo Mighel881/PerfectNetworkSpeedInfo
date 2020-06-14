@@ -29,6 +29,7 @@ static BOOL showOnLockScreen;
 static BOOL showOnControlCenter;
 static BOOL hideOnFullScreen;
 static BOOL hideOnLandscape;
+static BOOL hideOnAppSwitcherFolder;
 static BOOL notchlessSupport;
 static NSInteger separateSpeeds;
 static BOOL showDownloadSpeedFirst;
@@ -116,13 +117,15 @@ UpDownBytes getUpDownBytes()
 	upDownBytes.inputBytes = 0;
 	upDownBytes.outputBytes = 0;
 	
-	if (getifaddrs(&ifa_list) == -1) return upDownBytes;
+	if((getifaddrs(&ifa_list) < 0) || !ifa_list || ifa_list == 0)
+		return upDownBytes;
 
-	for (ifa = ifa_list; ifa; ifa = ifa->ifa_next)
+	for(ifa = ifa_list; ifa; ifa = ifa->ifa_next)
 	{
-		if (AF_LINK != ifa->ifa_addr->sa_family
+		if(ifa->ifa_addr == NULL
+		|| AF_LINK != ifa->ifa_addr->sa_family
 		|| (!(ifa->ifa_flags & IFF_UP) && !(ifa->ifa_flags & IFF_RUNNING))
-		|| ifa->ifa_data == 0
+		|| ifa->ifa_data == NULL || ifa->ifa_data == 0
 		|| strstr(ifa->ifa_name, "lo0")
 		|| strstr(ifa->ifa_name, "utun"))
 			continue;
@@ -132,8 +135,9 @@ UpDownBytes getUpDownBytes()
 		upDownBytes.inputBytes += if_data->ifi_ibytes;
 		upDownBytes.outputBytes += if_data->ifi_obytes;
 	}
-	
-	freeifaddrs(ifa_list);
+	if(ifa_list)
+		freeifaddrs(ifa_list);
+
 	return upDownBytes;
 }
 
@@ -158,6 +162,12 @@ static NSMutableString* formattedString()
 	{
 		upDiff *= 8;
 		downDiff *= 8;
+	}
+
+	if(upDiff > 50 * MEGABYTES && downDiff > 50 * MEGABYTES)
+	{
+		upDiff = 0;
+		downDiff = 0;
 	}
 
 	if(separateSpeeds == 0)
@@ -382,7 +392,7 @@ static void loadDeviceScreenDimensions()
 			if(![networkSpeedWindow isHidden])
 			{
 				NSString *speed = formattedString();
-				if(shouldUpdateSpeedLabel && !(isFolderOpen || isAppSwitcherOpen))
+				if(shouldUpdateSpeedLabel && !((isFolderOpen || isAppSwitcherOpen) && hideOnAppSwitcherFolder))
 				{
 					[networkSpeedWindow setAlpha: 1];
 					[networkSpeedLabel setText: speed];
@@ -578,6 +588,7 @@ static void settingsChanged(CFNotificationCenterRef center, void *observer, CFSt
 			[pref registerBool: &hideOnFullScreen default: NO forKey: @"hideOnFullScreen"];
 			[pref registerBool: &hideOnLandscape default: NO forKey: @"hideOnLandscape"];
 			[pref registerBool: &showAlways default: NO forKey: @"showAlways"];
+			[pref registerBool: &hideOnAppSwitcherFolder default: NO forKey: @"hideOnAppSwitcherFolder"];
 			[pref registerBool: &notchlessSupport default: NO forKey: @"notchlessSupport"];
 			[pref registerInteger: &separateSpeeds default: 0 forKey: @"separateSpeeds"];
 			[pref registerBool: &showDownloadSpeedFirst default: NO forKey: @"showDownloadSpeedFirst"];
