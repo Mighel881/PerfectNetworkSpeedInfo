@@ -5,7 +5,7 @@
 	<key>entry</key>
 	<dict>
 		<key>bundle</key>
-		<string>NetworkSpeed13Prefs</string>
+		<string>NetworkSpeedInfoPrefs</string>
 		<key>cell</key>
 		<string>PSLinkCell</string>
 		<key>detail</key>
@@ -15,7 +15,7 @@
 		<key>isController</key>
 		<true/>
 		<key>label</key>
-		<string>NetworkSpeed</string>
+		<string>NetworkSpeedInfo</string>
 	</dict>
 </dict>
 </plist>

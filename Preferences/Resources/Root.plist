@@ -822,7 +822,7 @@
 			<key>icon</key>
 			<string>github.png</string>
 			<key>url</key>
-   	 		<string>https://github.com/johnzaro/NetworkSpeed</string>
+   	 		<string>https://github.com/johnzaro/NetworkSpeedInfo</string>
 		</dict>
  		<dict>
         	<key>cell</key>
@@ -876,6 +876,6 @@
         </dict>
 	</array>
 	<key>title</key>
-	<string>NetworkSpeed</string>
+	<string>NetworkSpeedInfo</string>
 </dict>
 </plist>

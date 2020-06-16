@@ -21,7 +21,7 @@
         self.titleLabel = [[UILabel alloc] init];
         self.titleLabel.font = [UIFont boldSystemFontOfSize: 17];
         self.titleLabel.translatesAutoresizingMaskIntoConstraints = NO;
-        self.titleLabel.text = @"NetworkSpeed";
+        self.titleLabel.text = @"NetworkSpeedInfo";
 		self.titleLabel.alpha = 0.0;
         self.titleLabel.textColor = [UIColor blackColor];
         self.titleLabel.textAlignment = NSTextAlignmentCenter;
@@ -104,7 +104,7 @@
 - (void)reset: (PSSpecifier*)specifier
 {
     UIAlertController *reset = [UIAlertController
-        alertControllerWithTitle: @"NetworkSpeed"
+        alertControllerWithTitle: @"NetworkSpeedInfo"
 		message: @"Do you really want to Reset All Settings?"
 		preferredStyle: UIAlertControllerStyleAlert];
 	UIAlertAction *confirmAction = [UIAlertAction actionWithTitle: @"Confirm" style: UIAlertActionStyleDestructive handler:
