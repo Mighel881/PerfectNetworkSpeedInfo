@@ -9,7 +9,7 @@
 - (BOOL)isVisible;
 @end
 
-@interface NetworkSpeedInfo: NSObject
+@interface PerfectNetworkSpeedInfo: NSObject
 {
     UIWindow *networkSpeedWindow;
     UILabel *networkSpeedLabel;
@@ -21,7 +21,7 @@
 - (id)init;
 - (void)updateOrientation;
 - (void)updateFrame;
-- (void)updateNetworkSpeedInfoLabelSize;
+- (void)updatePerfectNetworkSpeedInfoLabelSize;
 - (void)updateTextColor:(UIColor *)color;
 - (void)openDoubleTapApp;
 - (void)openHoldApp;

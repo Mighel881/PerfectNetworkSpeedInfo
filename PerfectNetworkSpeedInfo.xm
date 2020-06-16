@@ -1,4 +1,4 @@
-#import "NetworkSpeedInfo.h"
+#import "PerfectNetworkSpeedInfo.h"
 
 #import "SparkColourPickerUtils.h"
 #import "SparkAppList.h"
@@ -13,7 +13,7 @@ static const long MEGABITS = 1000000;
 static const long KILOBYTES = 1 << 10;
 static const long MEGABYTES = 1 << 20;
 
-__strong static NetworkSpeedInfo *networkSpeedObject;
+__strong static PerfectNetworkSpeedInfo *networkSpeedObject;
 
 static BOOL shouldUpdateSpeedLabel;
 static long oldUpSpeed = 0, oldDownSpeed = 0;
@@ -233,7 +233,7 @@ static void loadDeviceScreenDimensions()
 	screenHeight = [[UIScreen mainScreen] _referenceBounds].size.height;
 }
 
-@implementation NetworkSpeedInfo
+@implementation PerfectNetworkSpeedInfo
 
 	- (id)init
 	{
@@ -299,12 +299,12 @@ static void loadDeviceScreenDimensions()
 			[[networkSpeedWindow layer] setCornerRadius: backgroundCornerRadius];
 		}
 
-		[self updateNetworkSpeedInfoLabelProperties];
-		[self updateNetworkSpeedInfoLabelSize];
+		[self updatePerfectNetworkSpeedInfoLabelProperties];
+		[self updatePerfectNetworkSpeedInfoLabelSize];
 		[self updateOrientation];
 	}
 
-	- (void)updateNetworkSpeedInfoLabelProperties
+	- (void)updatePerfectNetworkSpeedInfoLabelProperties
 	{
 		if(boldFont) [networkSpeedLabel setFont: [UIFont boldSystemFontOfSize: fontSize]];
 		else [networkSpeedLabel setFont: [UIFont systemFontOfSize: fontSize]];
@@ -318,7 +318,7 @@ static void loadDeviceScreenDimensions()
 			[networkSpeedLabel setTextColor: backupForegroundColor];
 	}
 
-	- (void)updateNetworkSpeedInfoLabelSize
+	- (void)updatePerfectNetworkSpeedInfoLabelSize
 	{
 		CGRect frame = [networkSpeedLabel frame];
 		frame.origin.x = margin;
@@ -457,7 +457,7 @@ static void loadDeviceScreenDimensions()
 
 	loadDeviceScreenDimensions();
 	if(!networkSpeedObject) 
-		networkSpeedObject = [[NetworkSpeedInfo alloc] init];
+		networkSpeedObject = [[PerfectNetworkSpeedInfo alloc] init];
 }
 
 -(void)frontDisplayDidChange: (id)arg1 // check if opened app is blacklisted
