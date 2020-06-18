@@ -1,5 +1,4 @@
 #import "PerfectNetworkSpeedInfo.h"
-
 #import "SparkColourPickerUtils.h"
 #import "SparkAppList.h"
 #import <Cephei/HBPreferences.h>
@@ -26,6 +25,7 @@ typedef struct
 static HBPreferences *pref;
 static BOOL enabled;
 static BOOL showOnLockScreen;
+static BOOL showOnlyOnLockScreen;
 static BOOL showOnControlCenter;
 static BOOL hideOnFullScreen;
 static BOOL hideOnLandscape;
@@ -429,6 +429,7 @@ static void loadDeviceScreenDimensions()
 		[networkSpeedWindow setHidden: 
 			[coverSheetPresentationManagerInstance _isEffectivelyLocked] 
 		 || [coverSheetPresentationManagerInstance isPresented] && !showOnLockScreen
+		 || ![coverSheetPresentationManagerInstance isPresented] && showOnlyOnLockScreen
 		 || isStatusBarHidden && hideOnFullScreen
 		 || [controlCenterControllerInstance isVisible] && !showOnControlCenter
 		 || ![coverSheetPresentationManagerInstance isPresented] && (shouldHideBasedOnOrientation || isBlacklistedAppInFront)
@@ -584,6 +585,7 @@ static void settingsChanged(CFNotificationCenterRef center, void *observer, CFSt
 		if(enabled)
 		{
 			[pref registerBool: &showOnLockScreen default: NO forKey: @"showOnLockScreen"];
+			[pref registerBool: &showOnlyOnLockScreen default: NO forKey: @"showOnlyOnLockScreen"];
 			[pref registerBool: &showOnControlCenter default: NO forKey: @"showOnControlCenter"];
 			[pref registerBool: &hideOnFullScreen default: NO forKey: @"hideOnFullScreen"];
 			[pref registerBool: &hideOnLandscape default: NO forKey: @"hideOnLandscape"];
